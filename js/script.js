@@ -64,7 +64,7 @@ const svg = d3.select('#vis')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
 function init() {
-    d3.csv("./data/weather.csv").then(data => {
+    d3.csv("./data/filtered_weather.csv").then(data => {
         console.log("Loaded Data:", data);
 
         data.forEach(d => {
