@@ -1,5 +1,5 @@
 
-const margin = { top: 80, right: 130, bottom: 60, left: 100 }; 
+const margin = { top: 80, right: 130, bottom: 60, left: 100 };
 const width = 800 - margin.left - margin.right;
 const height = 600 - margin.top - margin.bottom;
 let allData = [];
@@ -68,11 +68,13 @@ function init() {
         console.log("Loaded Data:", data);
 
         data.forEach(d => {
-            d.TMIN = +d.TMIN || 0;
-            d.TMAX = +d.TMAX || 0;
-            d.TAVG = +d.TAVG || 0;
-            d.PRCP = +d.PRCP || 0;
-            d.SNOW = +d.SNOW || 0;
+            d.TMIN = d.TMIN ? +d.TMIN : null;
+            d.TMAX = d.TMAX ? +d.TMAX : null;
+            d.TAVG = d.TAVG ? +d.TAVG : null;
+
+
+            d.PRCP = d.PRCP ? (+d.PRCP / 10) : 0;
+            d.SNOW = d.SNOW ? (+d.SNOW / 10) : 0;
             d.date = new Date(d.date.slice(0, 4), d.date.slice(4, 6) - 1, d.date.slice(6, 8));
             d.latitude = +d.latitude;
             d.longitude = +d.longitude;
@@ -90,27 +92,32 @@ function init() {
 }
 
 window.addEventListener('load', init);
+
 function setupSelector() {
     const xDropdown = d3.select('#xVariable');
     const yDropdown = d3.select('#yVariable');
-    const stateDropdown = d3.select('#stateFilter');
+    const regionContainer = d3.select('#regionFilter');
 
-    stateDropdown.selectAll("*").remove();
-    stateDropdown.append("option")
-        .text("All Regions")
-        .attr("value", "all");
+    regionContainer.selectAll("*").remove();
 
-    Object.entries(regions).forEach(([region, states]) => {
-        stateDropdown.append("option")
-            .text(region)
-            .attr("value", region);
+    Object.entries(regions).forEach(([region]) => {
+        const checkbox = regionContainer.append("label")
+            .attr("class", "region-option");
+
+        checkbox.append("input")
+            .attr("type", "checkbox")
+            .attr("value", region)
+            .attr("class", "region-checkbox");
+
+        checkbox.append("span").text(region);
+        regionContainer.append("br");
     });
 
-    d3.select('#stateFilter').on('change', null).on('change', function () {
+    d3.selectAll('.region-checkbox').on('change', function () {
         updateVis();
     });
 
-    d3.select('#dateFilter').on('change', null).on('change', function () {
+    d3.select('#dateFilter').on('change', function () {
         updateVis();
     });
 
@@ -130,7 +137,7 @@ function setupSelector() {
     d3.select('#xVariable').property('value', 'TAVG');
     d3.select('#yVariable').property('value', 'PRCP');
 
-    d3.selectAll('.variable').on('change', null).on('change', function () {
+    d3.selectAll('.variable').on('change', function () {
         const id = d3.select(this).attr('id');
         const selectedValue = d3.select(this).property('value');
 
@@ -186,49 +193,47 @@ function updateAxes() {
         .attr('class', 'labels');
 }
 
-
 function updateVis() {
     if (!xScale) xScale = d3.scaleLinear().range([0, width]);
     if (!yScale) yScale = d3.scaleLinear().range([height, 0]);
     if (!sizeScale) sizeScale = d3.scaleSqrt().range([2, 10]);
 
     const regionColorScale = d3.scaleOrdinal()
-        .domain(Object.keys(regions))  // The regions are the keys of the 'regions' object
-        .range(d3.schemeSet3);   // Use a predefined color scheme
-
-
-    console.log("X Scale Exists?", xScale);
-    console.log("Y Scale Exists?", yScale);
-    console.log("Size Scale Exists?", sizeScale);
+        .domain(Object.keys(regions))
+        .range(d3.schemeSet3);
 
     let filteredData = allData;
-    const selectedValue = d3.select('#stateFilter').property('value');
 
-    if (selectedValue !== "all") {
-        if (regions[selectedValue]) {
-            const selectedStates = regions[selectedValue];
-            filteredData = filteredData.filter(d => selectedStates.includes(d.state.toUpperCase()));
-        } else {
-            filteredData = filteredData.filter(d => d.state.toUpperCase() === selectedValue);
-        }
+    const selectedRegions = d3.selectAll('.region-checkbox:checked')
+        .nodes()
+        .map(node => node.value);
+
+    if (selectedRegions.length > 0) {
+        let selectedStates = new Set();
+        selectedRegions.forEach(region => {
+            if (regions[region]) {
+                regions[region].forEach(state => selectedStates.add(state));
+            }
+        });
+        filteredData = filteredData.filter(d => selectedStates.has(d.state.toUpperCase()));
     }
-    const selectedMonth = d3.select('#dateFilter').property('value');
-    console.log("Filtered Data:", filteredData);
 
+    const selectedMonth = d3.select('#dateFilter').property('value');
     if (selectedMonth !== "all") {
         filteredData = filteredData.filter(d => d.date.getMonth() + 1 == selectedMonth);
     }
 
-    if (filteredData.length > 0) {
-        xScale.domain([d3.min(filteredData, d => d[xVar]), d3.max(filteredData, d => d[xVar])]);
-        yScale.domain([d3.min(filteredData, d => d[yVar]), d3.max(filteredData, d => d[yVar])]);
-        sizeScale.domain([d3.min(filteredData, d => d[sizeVar]), d3.max(filteredData, d => d[sizeVar])]);
+    filteredData = filteredData.filter(d => d[xVar] != null && !isNaN(d[xVar]) && d[yVar] != null && !isNaN(d[yVar])
+        && d[xVar] != "" && d[yVar] != "");
+
+    if (filteredData.length === 0) {
+        console.warn("⚠ No valid data points to display after filtering.");
+        return;
     }
 
-    console.log("Filtered Data Count:", filteredData.length);
-    console.log("Sample Data Point:", filteredData.length > 0 ? filteredData[0] : "No Data!");
-
-    svg.selectAll('.points').remove();
+    xScale.domain([d3.min(filteredData, d => d[xVar]), d3.max(filteredData, d => d[xVar])]);
+    yScale.domain([d3.min(filteredData, d => d[yVar]), d3.max(filteredData, d => d[yVar])]);
+    sizeScale.domain([d3.min(filteredData, d => d[sizeVar]), d3.max(filteredData, d => d[sizeVar])]);
 
     svg.selectAll('.points')
         .data(filteredData, d => d.station)
@@ -238,19 +243,15 @@ function updateVis() {
                 .attr('cx', d => xScale(d[xVar]))
                 .attr('cy', d => yScale(d[yVar]))
                 .attr('r', d => sizeScale(d[sizeVar]))
-                //.style('fill', d => colorScale(d.region))
                 .attr('fill', d => regionColorScale(getRegion(d)))
                 .style('opacity', 0.8)
-        
                 .on('mouseover', function (event, d) {
-                    //console.log("Hovered Data:", d);
-
                     d3.select('#tooltip')
                         .style("display", 'block')
                         .html(`
                             <strong>State:</strong> ${d.state}<br>
                             <strong>Date:</strong> ${d.date.toLocaleDateString()}<br>
-                            <strong>Avg Temp:</strong> ${d.TAVG} °F<br>
+                            <strong>${weatherOptions.find(opt => opt.key === xVar).label}:</strong> ${d[xVar]}<br>
                             <strong>${weatherOptions.find(opt => opt.key === yVar).label}:</strong> ${d[yVar]}
                         `)
                         .style("left", (event.pageX + 20) + "px")
@@ -262,21 +263,18 @@ function updateVis() {
                 })
                 .on("mouseout", function () {
                     d3.select('#tooltip').style('display', 'none');
-                    d3.select(this)
-                        .style('stroke', 'none');
+                    d3.select(this).style('stroke', 'none');
                 }),
             update => update.transition().duration(500)
                 .attr('cx', d => xScale(d[xVar]))
                 .attr('cy', d => yScale(d[yVar]))
-                .attr('r', d => sizeScale(d[sizeVar]))
-                .style('fill', d => colorScale(d.state)),
-                
+                .attr('r', d => sizeScale(d[sizeVar])),
             exit => exit.remove()
         );
-    addLegend()
+
+    addLegend(regionColorScale);
 }
 
-// Helper function to get region based on state
 function getRegion(d) {
     const stateAbbr = d.state.toUpperCase();
     for (const region in regions) {
@@ -284,80 +282,39 @@ function getRegion(d) {
             return region;
         }
     }
-    return 'Unknown'; // Default value in case a state isn't found in any region
+    return 'Unknown';
 }
 
 function addLegend() {
-    const size = 10;  // Size of the color squares
-    const legendSpacing = 20;  // Space between each legend item
+    const size = 10;
+    const legendSpacing = 20;
 
-    // Use the same color scale as the data points
     const regionColorScale = d3.scaleOrdinal()
         .domain(Object.keys(regions))
-        .range(d3.schemeSet3);  // This should match the color scale used in the chart
+        .range(d3.schemeSet3);
 
-    // Ensure the legend starts below the chart area and does not overlap
-    const legendX = width + 50;  // Set X position a bit outside the chart
-    const legendY = height / 2;  // Set Y position in the middle of the SVG area
+    const legendX = width + 50;
+    const legendY = height / 2;
 
-    // Create legend squares
     svg.selectAll("regionSquare")
-        .data(Object.entries(regions))  // Use regions data
+        .data(Object.entries(regions))
         .enter()
         .append('rect')
         .attr('class', 'regionSquare')
-        .attr('x', (d, i) => legendX)  // Fixed X position
-        .attr('y', (d, i) => legendY + i * (size + legendSpacing))  // Stack items vertically
+        .attr('x', (d, i) => legendX)
+        .attr('y', (d, i) => legendY + i * (size + legendSpacing))
         .attr('width', size)
         .attr('height', size)
-        .style("fill", (d) => regionColorScale(d[0]));  // Use the color scale for legend colors
+        .style("fill", (d) => regionColorScale(d[0]));
 
-    // Add region names next to each square
     svg.selectAll("regionName")
         .data(Object.entries(regions))
         .enter()
         .append("text")
-        .attr("y", (d, i) => legendY + i * (size + legendSpacing) + size)  // Place text next to square
-        .attr("x", legendX + size + 5)  // Place text to the right of the square
+        .attr("y", (d, i) => legendY + i * (size + legendSpacing) + size)
+        .attr("x", legendX + size + 5)
         .style("fill", 'black')
-        .text(d => d[0])  // Display the region name (d[0] is the region)
+        .text(d => d[0])
         .attr("text-anchor", "left")
-        .style('font-size', '12px');  // Adjust font size if needed
+        .style('font-size', '12px');
 }
-
-
-// function addLegend() {
-//     const size = 10; // Size of the color squares
-//     const legendSpacing = 20; // Space between each legend item
-
-//     // Define color scale for the legend
-//     const colorScale = d3.scaleOrdinal(d3.schemeCategory10);  // Adjust for your actual color scale if needed
-
-//     // Ensure the legend starts below the chart area and does not overlap
-//     const legendX = width + 50;  // Set X position a bit outside the chart
-//     const legendY = height / 2;  // Set Y position in the middle of the SVG area
-
-//     // Create legend squares
-//     svg.selectAll("regionSquare")
-//         .data(Object.entries(regions))  // Use regions data
-//         .enter()
-//         .append('rect')
-//         .attr('class', 'regionSquare')
-//         .attr('x', (d, i) => legendX) // Fixed X position
-//         .attr('y', (d, i) => legendY + i * (size + legendSpacing))  // Stack items vertically
-//         .attr('width', size)
-//         .attr('height', size)
-//         .style("fill", (d) => colorScale(d[0]));
-
-//     // Add state names next to each square
-//     svg.selectAll("regionName")
-//         .data(Object.entries(regions))
-//         .enter()
-//         .append("text")
-//         .attr("y", (d, i) => legendY + i * (size + legendSpacing) + size)  // Place text next to square
-//         .attr("x", legendX + size + 5)  // Place text to the right of the square
-//         .style("fill", 'black')
-//         .text(d => d[0])  // Display the region name (d[0] is the region)
-//         .attr("text-anchor", "left")
-//         .style('font-size', '12px');  // Adjust font size if needed
-// }

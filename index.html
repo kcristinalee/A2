@@ -1,28 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assignment2</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
 
     <div class="container">
         <h1>Exploring Daily Weather Patterns in the U.S. (2017)</h1>
         <div id="controls">
-     
+
             <label for="xVariable">X-Axis:</label>
             <select id="xVariable" class="variable"></select>
-            
+
             <label for="yVariable">Y-Axis:</label>
             <select id="yVariable" class="variable"></select>
-            
-            <label for="stateFilter">State:</label>
-            <select id="stateFilter">
-                <option value="all">All States</option>
-            </select>
-            
+
+            <label for="stateFilter">Regions:</label>
+            <!-- <select id="stateFilter" multiple>
+                <option value="all">All Regions</option>
+            </select> -->
+            <div id="regionFilter"></div>
+
+
             <label for="dateFilter">Month:</label>
             <select id="dateFilter">
                 <option value="all">All Year</option>
@@ -39,17 +43,18 @@
                 <option value="11">November</option>
                 <option value="12">December</option>
             </select>
-            
+
         </div>
-        
+
         <div id="vis"></div>
-        <div id="tooltip" style="display:none"></div> 
-        
+        <div id="tooltip" style="display:none"></div>
+
     </div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/d3-simple-slider@2.0.0"></script>
     <script src="js/script.js"></script>
-   
+
 </body>
+
 </html>
