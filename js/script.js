@@ -1,4 +1,5 @@
-const margin = { top: 80, right: 60, bottom: 60, left: 100 };
+
+const margin = { top: 80, right: 130, bottom: 60, left: 100 }; 
 const width = 800 - margin.left - margin.right;
 const height = 600 - margin.top - margin.bottom;
 let allData = [];
@@ -44,26 +45,13 @@ const weatherOptions = [
 ];
 
 const regions = {
-    "Midwest": ["Illinois", "Indiana", "Iowa", "Kansas", "Michigan", "Minnesota",
-        "Missouri", "Nebraska", "North Dakota", "Ohio", "South Dakota", "Wisconsin"]
-        .map(state => stateAbbreviations[state]),
-
-    "Northeast": ["Connecticut", "Delaware", "Maine", "Maryland", "Massachusetts",
-        "New Hampshire", "New Jersey", "New York", "Pennsylvania",
-        "Rhode Island", "Vermont"]
-        .map(state => stateAbbreviations[state]),
-
-    "Southeast": ["Alabama", "Arkansas", "Florida", "Georgia", "Kentucky",
-        "Louisiana", "Mississippi", "North Carolina", "South Carolina",
-        "Tennessee", "Virginia", "West Virginia"]
-        .map(state => stateAbbreviations[state]),
-
-    "West": ["Alaska", "Arizona", "California", "Colorado", "Hawaii", "Idaho",
-        "Montana", "Nevada", "New Mexico", "Oregon", "Utah", "Washington", "Wyoming"]
-        .map(state => stateAbbreviations[state]),
-
-    "Southwest": ["Oklahoma", "Texas"].map(state => stateAbbreviations[state])
+    "Midwest": ["IL", "IN", "IA", "KS", "MI", "MN", "MO", "NE", "ND", "OH", "SD", "WI"],
+    "Northeast": ["CT", "DE", "ME", "MD", "MA", "NH", "NJ", "NY", "PA", "RI", "VT"],
+    "Southeast": ["AL", "AR", "FL", "GA", "KY", "LA", "MS", "NC", "SC", "TN", "VA", "WV"],
+    "West": ["AK", "AZ", "CA", "CO", "HI", "ID", "MT", "NV", "NM", "OR", "UT", "WA", "WY"],
+    "Southwest": ["OK", "TX"]
 };
+
 
 let xScale, yScale, sizeScale;
 const options = ['TMAX', 'TMIN', 'TAVG', 'PRCP', 'SNOW', 'SNWD', 'AWND', 'WSF5'];
@@ -204,6 +192,11 @@ function updateVis() {
     if (!yScale) yScale = d3.scaleLinear().range([height, 0]);
     if (!sizeScale) sizeScale = d3.scaleSqrt().range([2, 10]);
 
+    const regionColorScale = d3.scaleOrdinal()
+        .domain(Object.keys(regions))  // The regions are the keys of the 'regions' object
+        .range(d3.schemeSet3);   // Use a predefined color scheme
+
+
     console.log("X Scale Exists?", xScale);
     console.log("Y Scale Exists?", yScale);
     console.log("Size Scale Exists?", sizeScale);
@@ -235,6 +228,8 @@ function updateVis() {
     console.log("Filtered Data Count:", filteredData.length);
     console.log("Sample Data Point:", filteredData.length > 0 ? filteredData[0] : "No Data!");
 
+    svg.selectAll('.points').remove();
+
     svg.selectAll('.points')
         .data(filteredData, d => d.station)
         .join(
@@ -243,18 +238,20 @@ function updateVis() {
                 .attr('cx', d => xScale(d[xVar]))
                 .attr('cy', d => yScale(d[yVar]))
                 .attr('r', d => sizeScale(d[sizeVar]))
-                .style('fill', 'steelblue')
+                //.style('fill', d => colorScale(d.region))
+                .attr('fill', d => regionColorScale(getRegion(d)))
+                .style('opacity', 0.8)
+        
                 .on('mouseover', function (event, d) {
-                    console.log("Hovered Data:", d);
+                    //console.log("Hovered Data:", d);
 
                     d3.select('#tooltip')
                         .style("display", 'block')
                         .html(`
-                            <strong>${d.station}</strong><br/>
-                            State: ${d.state}<br/>
-                            Date: ${d.date.toLocaleDateString()}<br/>
-                            Avg Temp: ${d.TAVG} °F<br/>
-                            Precipitation: ${d.PRCP} inches
+                            <strong>State:</strong> ${d.state}<br>
+                            <strong>Date:</strong> ${d.date.toLocaleDateString()}<br>
+                            <strong>Avg Temp:</strong> ${d.TAVG} °F<br>
+                            <strong>${weatherOptions.find(opt => opt.key === yVar).label}:</strong> ${d[yVar]}
                         `)
                         .style("left", (event.pageX + 20) + "px")
                         .style("top", (event.pageY - 28) + "px");
@@ -271,33 +268,96 @@ function updateVis() {
             update => update.transition().duration(500)
                 .attr('cx', d => xScale(d[xVar]))
                 .attr('cy', d => yScale(d[yVar]))
-                .attr('r', d => sizeScale(d[sizeVar])),
+                .attr('r', d => sizeScale(d[sizeVar]))
+                .style('fill', d => colorScale(d.state)),
+                
             exit => exit.remove()
         );
+    addLegend()
+}
+
+// Helper function to get region based on state
+function getRegion(d) {
+    const stateAbbr = d.state.toUpperCase();
+    for (const region in regions) {
+        if (regions[region].includes(stateAbbr)) {
+            return region;
+        }
+    }
+    return 'Unknown'; // Default value in case a state isn't found in any region
 }
 
 function addLegend() {
-    let size = 10;
+    const size = 10;  // Size of the color squares
+    const legendSpacing = 20;  // Space between each legend item
 
-    svg.selectAll("stateSquare")
-        .data(states)
+    // Use the same color scale as the data points
+    const regionColorScale = d3.scaleOrdinal()
+        .domain(Object.keys(regions))
+        .range(d3.schemeSet3);  // This should match the color scale used in the chart
+
+    // Ensure the legend starts below the chart area and does not overlap
+    const legendX = width + 50;  // Set X position a bit outside the chart
+    const legendY = height / 2;  // Set Y position in the middle of the SVG area
+
+    // Create legend squares
+    svg.selectAll("regionSquare")
+        .data(Object.entries(regions))  // Use regions data
         .enter()
         .append('rect')
-        .attr('class', 'stateSquare')
-        .attr('x', (d, i) => i * (size + 20) + 100)
-        .attr('y', -margin.top / 2)
+        .attr('class', 'regionSquare')
+        .attr('x', (d, i) => legendX)  // Fixed X position
+        .attr('y', (d, i) => legendY + i * (size + legendSpacing))  // Stack items vertically
         .attr('width', size)
         .attr('height', size)
-        .style("fill", 'steelblue');
+        .style("fill", (d) => regionColorScale(d[0]));  // Use the color scale for legend colors
 
-    svg.selectAll("stateName")
-        .data(states)
+    // Add region names next to each square
+    svg.selectAll("regionName")
+        .data(Object.entries(regions))
         .enter()
         .append("text")
-        .attr("y", -margin.top / 2 + size)
-        .attr("x", (d, i) => i * (size + 20) + 120)
+        .attr("y", (d, i) => legendY + i * (size + legendSpacing) + size)  // Place text next to square
+        .attr("x", legendX + size + 5)  // Place text to the right of the square
         .style("fill", 'black')
-        .text(d => d)
+        .text(d => d[0])  // Display the region name (d[0] is the region)
         .attr("text-anchor", "left")
-        .style('font-size', '10px');
+        .style('font-size', '12px');  // Adjust font size if needed
 }
+
+
+// function addLegend() {
+//     const size = 10; // Size of the color squares
+//     const legendSpacing = 20; // Space between each legend item
+
+//     // Define color scale for the legend
+//     const colorScale = d3.scaleOrdinal(d3.schemeCategory10);  // Adjust for your actual color scale if needed
+
+//     // Ensure the legend starts below the chart area and does not overlap
+//     const legendX = width + 50;  // Set X position a bit outside the chart
+//     const legendY = height / 2;  // Set Y position in the middle of the SVG area
+
+//     // Create legend squares
+//     svg.selectAll("regionSquare")
+//         .data(Object.entries(regions))  // Use regions data
+//         .enter()
+//         .append('rect')
+//         .attr('class', 'regionSquare')
+//         .attr('x', (d, i) => legendX) // Fixed X position
+//         .attr('y', (d, i) => legendY + i * (size + legendSpacing))  // Stack items vertically
+//         .attr('width', size)
+//         .attr('height', size)
+//         .style("fill", (d) => colorScale(d[0]));
+
+//     // Add state names next to each square
+//     svg.selectAll("regionName")
+//         .data(Object.entries(regions))
+//         .enter()
+//         .append("text")
+//         .attr("y", (d, i) => legendY + i * (size + legendSpacing) + size)  // Place text next to square
+//         .attr("x", legendX + size + 5)  // Place text to the right of the square
+//         .style("fill", 'black')
+//         .text(d => d[0])  // Display the region name (d[0] is the region)
+//         .attr("text-anchor", "left")
+//         .style('font-size', '12px');  // Adjust font size if needed
+// }
