@@ -2,13 +2,13 @@ const margin = { top: 80, right: 130, bottom: 60, left: 100 };
 const width = 800 - margin.left - margin.right;
 const height = 600 - margin.top - margin.bottom;
 let allData = [];
-let xVar = 'TAVG', yVar = 'PRCP', sizeVar = 'SNOW', targetYear = 2017;
+let xVar = 'TAVG', yVar = 'PRCP', sizeVar = 'elevation', targetYear = 2017;
 
 const stateAbbreviations = {
     "Connecticut": "CT", "Delaware": "DE",
-    "Florida": "FL", "Georgia": "GA","Maine": "ME", "Maryland": "MD",
-    "Massachusetts": "MA","New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY",
-    "North Carolina": "NC","Pennsylvania": "PA", "Rhode Island": "RI",
+    "Florida": "FL", "Georgia": "GA", "Maine": "ME", "Maryland": "MD",
+    "Massachusetts": "MA", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY",
+    "North Carolina": "NC", "Pennsylvania": "PA", "Rhode Island": "RI",
     "South Carolina": "SC", "Vermont": "VT", "Virginia": "VA",
 };
 
@@ -208,7 +208,7 @@ function updateVis() {
     updateAxes()
 
     svg.selectAll('.points')
-        .data(filteredData, d => d.station+ d.date)
+        .data(filteredData, d => d.station)
         .join(
             enter => enter.append('circle')
                 .attr('class', 'points')
@@ -223,6 +223,7 @@ function updateVis() {
                         .html(`
                             <strong>State:</strong> ${d.state}<br>
                             <strong>Date:</strong> ${d.date.toLocaleDateString()}<br>
+                            <strong>Elevation (meters):</strong> ${d.elevation}<br>
                             <strong>${weatherOptions.find(opt => opt.key === xVar).label}:</strong> ${d[xVar]}<br>
                             <strong>${weatherOptions.find(opt => opt.key === yVar).label}:</strong> ${d[yVar]}
                         `)
@@ -243,7 +244,7 @@ function updateVis() {
                 .attr('r', d => sizeScale(d[sizeVar])),
             exit => exit.remove()
         );
-        addLegend();
+    addLegend();
 }
 
 function getRegion(d) {
@@ -285,4 +286,49 @@ function addLegend() {
                 .style("font-size", "10px")
                 .attr("alignment-baseline", "middle");
         });
+    
+    const elevationLegend = legend.append("g")
+        .attr("transform", `translate(0, ${states.length * 15 + 20})`);
+
+    elevationLegend.append("circle")
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .attr("r", 5)  
+        .attr("fill", "#black"); 
+
+    elevationLegend.append("circle")
+        .attr("cx", 50)
+        .attr("cy", 0)
+        .attr("r", 15)  
+        .attr("fill", "#black"); 
+
+    elevationLegend.append("line")
+        .attr("x1", 5)
+        .attr("y1", 0)
+        .attr("x2", 35)
+        .attr("y2", 0)
+        .attr("stroke", "black")
+        .attr("stroke-width", 2)
+        .attr("marker-end", "url(#arrow)"); 
+
+    elevationLegend.append("text")
+        .attr("x", -10)  
+        .attr("y", 30)  
+        .text("Increasing Elevation")
+        .style("font-size", "12px")
+        .attr("alignment-baseline", "middle")
+        .attr("fill", "black");  
+
+    svg.append("defs")
+        .append("marker")
+        .attr("id", "arrow")
+        .attr("viewBox", "0 0 10 10")
+        .attr("refX", 5)
+        .attr("refY", 5)
+        .attr("markerWidth", 4)
+        .attr("markerHeight", 4)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M 0 0 L 10 5 L 0 10 Z")
+        .attr("fill", "black");
 }
