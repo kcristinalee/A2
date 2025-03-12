@@ -31,23 +31,21 @@ button {
     font-size: 12px;
 }
 
-/* Grid layout for checkboxes */
 .checkbox-grid {
     display: grid;
-    grid-template-columns: repeat(5, auto); /* Two tight columns */
-    gap: 3px 40px; /* Small vertical gap, wider horizontal gap */
-    align-items: start; /* Aligns checkboxes to the top */
-    justify-content: left; /* Aligns grid to the left edge */
+    grid-template-columns: repeat(5, auto);
+    gap: 3px 40px;
+    align-items: start;
+    justify-content: left;
     text-align: left;
-    margin-left: 0; /* Ensures left alignment */
-    padding-left: 0; /* Removes extra space */
+    margin-left: 0;
+    padding-left: 0;
 }
 
-/* Style for each checkbox item */
 .checkbox-item {
     display: flex;
     align-items: left;
-    gap: 5px; /* Space between checkbox and text */
-    white-space: nowrap; /* Prevents text wrapping */
+    gap: 5px;
+    white-space: nowrap;
 }
 

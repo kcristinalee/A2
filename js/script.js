@@ -5,19 +5,11 @@ let allData = [];
 let xVar = 'TAVG', yVar = 'PRCP', sizeVar = 'SNOW', targetYear = 2017;
 
 const stateAbbreviations = {
-    "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
-    "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE",
-    "Florida": "FL", "Georgia": "GA", "Hawaii": "HI", "Idaho": "ID",
-    "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS",
-    "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD",
-    "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS",
-    "Missouri": "MO", "Montana": "MT", "Nebraska": "NE", "Nevada": "NV",
-    "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY",
-    "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK",
-    "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI",
-    "South Carolina": "SC", "South Dakota": "SD", "Tennessee": "TN",
-    "Texas": "TX", "Utah": "UT", "Vermont": "VT", "Virginia": "VA",
-    "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"
+    "Connecticut": "CT", "Delaware": "DE",
+    "Florida": "FL", "Georgia": "GA","Maine": "ME", "Maryland": "MD",
+    "Massachusetts": "MA","New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY",
+    "North Carolina": "NC","Pennsylvania": "PA", "Rhode Island": "RI",
+    "South Carolina": "SC", "Vermont": "VT", "Virginia": "VA",
 };
 
 const weatherOptions = [
@@ -41,6 +33,9 @@ const svg = d3.select('#vis')
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
+const stateColorScale = d3.scaleOrdinal()
+    .domain(Object.values(stateAbbreviations))
+    .range(d3.schemeCategory10.concat(d3.schemeSet3).slice(0, 50));
 function init() {
     d3.csv("./data/filtered_weather.csv").then(data => {
         console.log("Loaded Data:", data);
@@ -154,7 +149,6 @@ function updateAxes() {
         .range([height, 0]);
 
     const yAxis = d3.axisLeft(yScale).ticks(10);
-
     svg.append("g")
         .attr("class", "axis")
         .call(yAxis);
@@ -219,7 +213,7 @@ function updateVis() {
                 .attr('cx', d => xScale(d[xVar]))
                 .attr('cy', d => yScale(d[yVar]))
                 .attr('r', d => sizeScale(d[sizeVar]))
-                .attr('fill', regionColorScale("East Coast"))
+                .attr('fill', d => stateColorScale(d.state))
                 .style('opacity', 0.8)
                 .on('mouseover', function (event, d) {
                     d3.select('#tooltip')
@@ -247,6 +241,7 @@ function updateVis() {
                 .attr('r', d => sizeScale(d[sizeVar])),
             exit => exit.remove()
         );
+        addLegend();
 }
 
 function getRegion(d) {
@@ -258,37 +253,34 @@ function getRegion(d) {
     }
     return 'Unknown';
 }
-
 function addLegend() {
-    const size = 10;
-    const legendSpacing = 20;
+    svg.selectAll(".legend").remove();
 
-    const regionColorScale = d3.scaleOrdinal()
-        .domain(Object.keys(regions))
-        .range(d3.schemeSet3);
+    const legend = svg.append("g")
+        .attr("class", "legend")
+        .attr("transform", `translate(${width + 30}, 20)`);
 
-    const legendX = width + 50;
-    const legendY = height / 2;
+    const states = Object.entries(stateAbbreviations);
 
-    svg.selectAll("regionSquare")
-        .data(Object.entries(regions))
+    legend.selectAll(".legend-item")
+        .data(states)
         .enter()
-        .append('rect')
-        .attr('class', 'regionSquare')
-        .attr('x', (d, i) => legendX)
-        .attr('y', (d, i) => legendY + i * (size + legendSpacing))
-        .attr('width', size)
-        .attr('height', size)
-        .style("fill", (d) => regionColorScale(d[0]));
+        .append("g")
+        .attr("class", "legend-item")
+        .attr("transform", (d, i) => `translate(0, ${i * 15})`)
+        .each(function (d) {
+            d3.select(this)
+                .append("rect")
+                .attr("width", 10)
+                .attr("height", 10)
+                .attr("fill", stateColorScale(d[1]));
 
-    svg.selectAll("regionName")
-        .data(Object.entries(regions))
-        .enter()
-        .append("text")
-        .attr("y", (d, i) => legendY + i * (size + legendSpacing) + size)
-        .attr("x", legendX + size + 5)
-        .style("fill", 'black')
-        .text(d => d[0])
-        .attr("text-anchor", "left")
-        .style('font-size', '12px');
+            d3.select(this)
+                .append("text")
+                .attr("x", 15)
+                .attr("y", 8)
+                .text(d[1])
+                .style("font-size", "10px")
+                .attr("alignment-baseline", "middle");
+        });
 }
