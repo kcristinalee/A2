@@ -9,7 +9,16 @@
     max-width: 800px;
     margin:2rem auto;
     font-family: Arial, sans-serif;
+    text-align: center;
 }
+
+h1 {
+    font-size: 24px; 
+    white-space: nowrap; 
+    text-align: center; 
+    margin: 20px 0; 
+}
+
 
 #vis svg {
     margin: 2rem 0;

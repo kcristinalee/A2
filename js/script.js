@@ -145,7 +145,7 @@ function updateAxes() {
         .call(xAxis);
 
     yScale = d3.scaleLinear()
-        .domain([0, d3.max(allData, d => d[yVar])])
+        .domain([d3.min(allData, d => d[yVar]), d3.max(allData, d => d[yVar])])
         .range([height, 0]);
 
     const yAxis = d3.axisLeft(yScale).ticks(10);
@@ -205,8 +205,10 @@ function updateVis() {
     yScale.domain([d3.min(filteredData, d => d[yVar]), d3.max(filteredData, d => d[yVar])]);
     sizeScale.domain([d3.min(filteredData, d => d[sizeVar]), d3.max(filteredData, d => d[sizeVar])]);
 
+    updateAxes()
+
     svg.selectAll('.points')
-        .data(filteredData, d => d.station)
+        .data(filteredData, d => d.station+ d.date)
         .join(
             enter => enter.append('circle')
                 .attr('class', 'points')
@@ -235,7 +237,7 @@ function updateVis() {
                     d3.select('#tooltip').style('display', 'none');
                     d3.select(this).style('stroke', 'none');
                 }),
-            update => update.transition().duration(500)
+            update => update.transition().duration(700)
                 .attr('cx', d => xScale(d[xVar]))
                 .attr('cy', d => yScale(d[yVar]))
                 .attr('r', d => sizeScale(d[sizeVar])),
