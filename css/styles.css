@@ -1,4 +1,3 @@
-/*Reset default styles*/
 *{
     font-family: Arial, sans-serif;
     max-width: 800px;
@@ -12,11 +11,9 @@
     font-family: Arial, sans-serif;
 }
 
-
-
 #vis svg {
     margin: 2rem 0;
-    border: 1px solid #ccc; /*otherwise you can't see this part*/
+    border: 1px solid #ccc;
 }
 
 button {
@@ -25,11 +22,32 @@ button {
 }
 
 #tooltip {
-    position: absolute; /* So we can move it with the cursor */
+    position: absolute;
     padding: 10px;
     background: white;
     border: 1px solid #ddd;
     border-radius: 4px;
-    pointer-events: none; /* Prevent tooltip from interfering with mouse events */
+    pointer-events: none;
     font-size: 12px;
 }
+
+/* Grid layout for checkboxes */
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(5, auto); /* Two tight columns */
+    gap: 3px 40px; /* Small vertical gap, wider horizontal gap */
+    align-items: start; /* Aligns checkboxes to the top */
+    justify-content: left; /* Aligns grid to the left edge */
+    text-align: left;
+    margin-left: 0; /* Ensures left alignment */
+    padding-left: 0; /* Removes extra space */
+}
+
+/* Style for each checkbox item */
+.checkbox-item {
+    display: flex;
+    align-items: left;
+    gap: 5px; /* Space between checkbox and text */
+    white-space: nowrap; /* Prevents text wrapping */
+}
+
