@@ -3,8 +3,11 @@
 
 # CMSC471: A2
 Group Members: Isabel Flynn, Christina Lee, Kamyavalli Mopidevi
+
 Link to Github: https://github.com/kcristinalee/A2
+
 Link to Public Webpage: https://kcristinalee.github.io/A2
+
 Link to Demo: https://A2demo
 
 
